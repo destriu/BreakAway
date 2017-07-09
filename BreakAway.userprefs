@@ -1,0 +1,17 @@
+﻿<Properties StartupItem="Assembly-CSharp.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.AttachToProcess" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Code\Implementation\BaseClasses\BaseShip.cs">
+    <Files>
+      <File FileName="Assets\Code\Interfaces\ICell.cs" Line="1" Column="1" />
+      <File FileName="Assets\Code\Interfaces\IShip.cs" Line="1" Column="1" />
+      <File FileName="Assets\Code\Implementation\Managers\ControlsManager.cs" Line="1" Column="1" />
+      <File FileName="Assets\Code\Implementation\BaseClasses\BaseShip.cs" Line="106" Column="10" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore>
+      <Breakpoint file="E:\BreakAway\BreakAway\Assets\Code\Implementation\BaseClasses\BaseShip.cs" line="106" column="1" />
+    </BreakpointStore>
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
