@@ -5,6 +5,9 @@ using UnityEngine;
 public class BaseShip : MonoBehaviour
 {
 	#region Stats
+	//********** General ************//
+	private GameManager gm;
+
 	//********** Ship Stats ********//
 	public float health = 100f;
 	public float maxHealth = 100f;
@@ -17,12 +20,16 @@ public class BaseShip : MonoBehaviour
 	private float boostFuel;
 	private float maxBoostFuel;
 	public float boostModifier;
+	private bool isBoostActivated;
 
 	public float fireRate;
 	private bool isFiringPrimary;
 
+	public float turnRate;
 	public float moveSpeed;
+	public float maxSpeed;
 	public Vector2 maxVelocity;
+	public Vector2 maxTurnVelocity;
 
 	private Rigidbody2D shipRigidBody;
 
@@ -96,44 +103,32 @@ public class BaseShip : MonoBehaviour
 	// Use this for initialization
 	void Start () 
 	{
-		shipRigidBody = GetComponent<Rigidbody2D>();
+		//shipRigidBody = GetComponent<Rigidbody2D>();
+		gm = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameManager>();
+		GameManager.move += MoveShip;
 	}
 	#endregion
 
 	#region Ship Actions
 	void FixedUpdate () 
 	{
-		Move();
+		
 	}
 
 	//**************************** Movement ******************************//
 	// This should take care of all movement of the ship
-	private void Move()
+	private void MoveShip()
 	{
-		Vector2 direction = new Vector2( Input.GetAxis("Horizontal") > 0 ? 1f: -1f, Input.GetAxis("Vertical") > 0 ? 1f: -1f );
-		if(Input.GetButton("Horizontal"))
-		{
-			
-			//Debug.Log("Moving horizontal " + Input.GetAxis("Horizontal") );
-			Vector2 forceVector = (moveSpeed * Time.deltaTime * 60f) * Vector2.right * direction.x;
-			Debug.Log(forceVector);
-			shipRigidBody.AddForce(forceVector);
-		}
+		Vector2 velocity = Vector2.zero;
+		velocity = new Vector2 (Input.GetAxis("Horizontal"),Input.GetAxis("Vertical")) * moveSpeed * Time.deltaTime;
 
-		if(Input.GetButton("Vertical"))
-		{
-			//Debug.Log("Moving vertical " + Input.GetAxis("Vertical") );
-			Vector2 forceVector = (moveSpeed * Time.deltaTime * 60f) * Vector2.up * direction.y;
-			Debug.Log(forceVector);
-			shipRigidBody.AddForce(forceVector);
-		}
+		float z = transform.rotation.eulerAngles.z;
+		z -= Input.GetAxis("Horizontal") * turnRate * Time.deltaTime;
 
-		// adjust velocity on x or y axis if either goes above the max
-		Vector2 currentVelocity = shipRigidBody.velocity;
-		shipRigidBody.velocity = new Vector2( Mathf.Abs(currentVelocity.x) > maxVelocity.x ? maxVelocity.x * direction.x : currentVelocity.x, Mathf.Abs(currentVelocity.y) > maxVelocity.y ? maxVelocity.y * direction.y : currentVelocity.y );
+		transform.eulerAngles = new Vector3( 0, 0, Mathf.Atan2( Input.GetAxis("Vertical"), Input.GetAxis("Horizontal")) * Mathf.Rad2Deg - 90f);
+
+		transform.position += (Vector3)velocity;
 	}
-
-	//private void 
 
 	// This should activate boosters on the ship
 	private void Boost()
@@ -154,7 +149,11 @@ public class BaseShip : MonoBehaviour
 	// This should fire the current primary weapon of the ship
 	protected IEnumerator FirePrimary()
 	{
-		yield return new WaitForSeconds(fireRate);
+		while(true)
+		{
+			yield return new WaitForSeconds(fireRate);
+			Debug.Log("Firing");
+		}
 	}
 
 	// This should stop the ship from firing any more projectiles from it's primary weapon
