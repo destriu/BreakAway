@@ -3,32 +3,39 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public delegate void Move ();
+public delegate void Fire();
+public delegate void StopFire();
 public class GameManager : MonoBehaviour 
 {
 	#region Variables
+	public static Fire fire1;
+	public static Fire fire2;
+	public static StopFire stopFire1;
 	public static Move move;
+	public static Move noMovement;
 
-	private GameObject player;
+	private static GameManager gm;
+	private static GameObject player;
 
-	private bool isMoving;
-	private bool isRotating;
 	private bool isPaused;
 
 	//********** Properties **************//
-	public bool IsMoving
+	public static GameManager GM
 	{
 		get{
-			return isMoving;
+			return gm;
 		}
 	}
 
-	public bool IsRotating
+	public static GameObject Player
 	{
 		get{
-			return isRotating;
+			return player;
 		}
 	}
 
+
+		
 	public bool IsPaused
 	{
 		get{
@@ -38,28 +45,57 @@ public class GameManager : MonoBehaviour
 	#endregion
 
 	#region Body
+	void Awake()
+	{
+		gm = this;
+		player = GameObject.FindGameObjectWithTag("Player");
+	}
+
 	void Start()
 	{
-		player = GameObject.FindGameObjectWithTag("Player");
+		
 	}
 
 	// Update is called once per frame
 	void FixedUpdate () 
 	{
+		GetFireInput();
 		GetMovementInput();
 	}
 
 	private void GetMovementInput()
 	{
-		Vector2 direction = new Vector2();
-	
-		isRotating = Input.GetAxis("Horizontal") != 0 || Input.GetButton("Horizontal");
-		isMoving = Input.GetAxis("Vertical") != 0 || Input.GetButton("Vertical");
-
-		if(isMoving || isRotating)
+		if((Input.GetAxis("Vertical") != 0 || Input.GetButton("Vertical")) || 
+			(Input.GetAxis("Horizontal") != 0 || Input.GetButton("Horizontal")))
 		{
 			move();
 		}
+		else
+		{
+			noMovement();
+		}
+	}
+
+	private void GetFireInput()
+	{
+		if(Input.GetButton("Fire1"))
+		{
+			fire1();
+		}
+		else
+		{
+			stopFire1();
+		}
+
+		if(Input.GetButton("Fire2"))
+		{
+			fire2();
+		}
+	}
+
+	private void PauseGame()
+	{
+		
 	}
 	#endregion
 }

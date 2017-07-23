@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 public class BaseShip : MonoBehaviour
 {
@@ -23,15 +25,32 @@ public class BaseShip : MonoBehaviour
 	private bool isBoostActivated;
 
 	public float fireRate;
+	public float specialCoolDown;
 	private bool isFiringPrimary;
+	private bool isSpecialOnCoolDown;
 
 	public float turnRate;
 	public float moveSpeed;
 	public float maxSpeed;
-	public Vector2 maxVelocity;
-	public Vector2 maxTurnVelocity;
-
+	private bool isMoving;
+	private Vector2 velocity;
+	private Vector2 direction;
 	private Rigidbody2D shipRigidBody;
+
+	public enum AmmoType
+	{
+		singleShot,
+		doubleShot,
+		tripleShot,
+		burstShot,
+		pieringShot
+	}
+
+	public AmmoType ammoType;
+
+	private List<GameObject> ammo;
+	public GameObject[] ammoSpawnPositions;
+	private Queue<GameObject> ammoQueue;
 
 	//********* Properties *********//
 	public float Health
@@ -97,6 +116,13 @@ public class BaseShip : MonoBehaviour
 			}
 		}
 	}
+
+	public bool IsMoving
+	{
+		get{
+			return isMoving;
+		}
+	}
 	#endregion
 
 	#region Setup
@@ -104,8 +130,28 @@ public class BaseShip : MonoBehaviour
 	void Start () 
 	{
 		//shipRigidBody = GetComponent<Rigidbody2D>();
-		gm = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameManager>();
+		gm = GameManager.GM;
 		GameManager.move += MoveShip;
+		GameManager.noMovement += MovementStopped;
+
+		GameManager.fire1 += StartFiringPrimary;
+		GameManager.fire2 += FireSpecial;
+		GameManager.stopFire1 += StopFiringPrimary;
+
+		ammo = new List<GameObject>();
+		ammo = GameObject.FindGameObjectsWithTag("Ammo").OfType<GameObject>().ToList();
+		ammo = ammo.OrderBy(go => PadNumbers(go.name)).ToList();
+
+		ammoQueue = new Queue<GameObject>();
+		for(int i = 0; i < ammo.Count; i++)
+		{
+			ammoQueue.Enqueue(ammo[i]);
+		}
+	}
+
+	private string PadNumbers(string input) 
+	{ 
+		return Regex.Replace(input, "[0-9]+", match => match.Value.PadLeft(10, '0')); 
 	}
 	#endregion
 
@@ -119,8 +165,9 @@ public class BaseShip : MonoBehaviour
 	// This should take care of all movement of the ship
 	private void MoveShip()
 	{
-		Vector2 velocity = Vector2.zero;
+		isMoving = true;
 		velocity = new Vector2 (Input.GetAxis("Horizontal"),Input.GetAxis("Vertical")) * moveSpeed * Time.deltaTime;
+		direction  = velocity.normalized;
 
 		float z = transform.rotation.eulerAngles.z;
 		z -= Input.GetAxis("Horizontal") * turnRate * Time.deltaTime;
@@ -128,6 +175,11 @@ public class BaseShip : MonoBehaviour
 		transform.eulerAngles = new Vector3( 0, 0, Mathf.Atan2( Input.GetAxis("Vertical"), Input.GetAxis("Horizontal")) * Mathf.Rad2Deg - 90f);
 
 		transform.position += (Vector3)velocity;
+	}
+
+	private void MovementStopped()
+	{
+		isMoving = false;
 	}
 
 	// This should activate boosters on the ship
@@ -149,10 +201,11 @@ public class BaseShip : MonoBehaviour
 	// This should fire the current primary weapon of the ship
 	protected IEnumerator FirePrimary()
 	{
-		while(true)
+		while(isFiringPrimary)
 		{
-			yield return new WaitForSeconds(fireRate);
 			Debug.Log("Firing");
+			SetupAndFireAmmo();
+			yield return new WaitForSeconds(fireRate);
 		}
 	}
 
@@ -162,14 +215,80 @@ public class BaseShip : MonoBehaviour
 		if(isFiringPrimary)
 		{
 			isFiringPrimary = false;
-			StopCoroutine("FirePrimary");
 		}
+	}
+
+	private void SetupAndFireAmmo()
+	{
+		GameObject[] ammoInUse = new GameObject[0];
+		switch(ammoType)
+		{
+		case AmmoType.singleShot:
+			ammoInUse = GetAmmoInUse<BaseProjectile>(numAmmoNeeded:1);
+			break;
+
+		case AmmoType.doubleShot:
+			ammoInUse = GetAmmoInUse<BaseProjectile>(numAmmoNeeded:2);
+			break;
+
+		case AmmoType.tripleShot:
+			ammoInUse = GetAmmoInUse<BaseProjectile>(numAmmoNeeded:3);
+			break;
+
+		case AmmoType.burstShot:
+			ammoInUse = GetAmmoInUse<BurstAmmo>(numAmmoNeeded:1);
+			break;
+
+		case AmmoType.pieringShot:
+			ammoInUse = GetAmmoInUse<BaseProjectile>(numAmmoNeeded:1);
+			break;
+		}
+			
+		for(int i = 0; i < ammoInUse.Length; i++)
+		{
+			ammoInUse[i].transform.position = ammoSpawnPositions[i + (ammoType == AmmoType.doubleShot ? 1 : 0)].transform.position;
+
+			if(ammoType == AmmoType.doubleShot)
+			{
+				ammoInUse[i].GetComponent<BaseProjectile>().SetDirection(direction == Vector2.zero ? Vector2.up : direction);
+			}
+		}
+	}
+
+	// Should return a list containing ammo from the ammoQueue to the amount sent in
+	private GameObject[] GetAmmoInUse<T>(int numAmmoNeeded)
+	{
+		GameObject[] ammoInUse = new GameObject[numAmmoNeeded];
+		for(int i = 0; i < numAmmoNeeded; i++)
+		{
+			ammoInUse[i] = ammoQueue.Dequeue();
+			ammoQueue.Enqueue(ammoInUse[i]);
+
+			ammoInUse[i].AddComponent(typeof(T));
+		}
+
+		return ammoInUse;
 	}
 
 	// This should fire the current speacial weapon of the ship
 	private void FireSpecial()
 	{
-		
+		if(!isSpecialOnCoolDown)
+		{
+			Debug.Log("Special Fired");
+			isSpecialOnCoolDown = true;
+			StartCoroutine(SpecialCoolDown());
+		}
+		else
+		{
+			Debug.Log("Special is on cool down");
+		}
+	}
+
+	private IEnumerator SpecialCoolDown()
+	{
+		yield return new WaitForSeconds(specialCoolDown);
+		isSpecialOnCoolDown = false;
 	}
 
 	//************************* Barrier *************************************//

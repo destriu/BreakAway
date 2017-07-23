@@ -1,6 +1,12 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.AttachToProcess" />
-  <MonoDevelop.Ide.Workbench />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Code\Implementation\Ships\Base\BaseShip.cs">
+    <Files>
+      <File FileName="Assets\Code\Implementation\Ammo\Base\BaseProjectile.cs" Line="27" Column="18" />
+      <File FileName="Assets\Code\Implementation\Ships\Base\BaseShip.cs" Line="133" Column="3" />
+      <File FileName="Assets\Code\Implementation\Managers\GameManager.cs" Line="85" Column="7" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
